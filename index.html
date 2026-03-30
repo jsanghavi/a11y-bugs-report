@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ASE Accessibility Bugs Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; padding: 20px; background: #f5f5f5; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: #0176d3; margin-bottom: 10px; font-size: 28px; }
+        .summary { margin: 20px 0; padding: 20px; background: #f4f6f9; border-radius: 6px; }
+        .summary h2 { font-size: 18px; margin-bottom: 10px; color: #032e61; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .stat-card { background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #0176d3; }
+        .stat-card .label { font-size: 12px; text-transform: uppercase; color: #706e6b; font-weight: 600; }
+        .stat-card .value { font-size: 24px; font-weight: bold; color: #032e61; margin-top: 5px; }
+        .filters { margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-btn { padding: 8px 16px; border: 1px solid #d8dde6; background: white; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .filter-btn:hover { background: #f4f6f9; }
+        .filter-btn.active { background: #0176d3; color: white; border-color: #0176d3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        thead { background: #f4f6f9; position: sticky; top: 0; }
+        th { text-align: left; padding: 12px; font-weight: 600; color: #032e61; border-bottom: 2px solid #d8dde6; cursor: pointer; user-select: none; }
+        th:hover { background: #e8edf4; }
+        td { padding: 12px; border-bottom: 1px solid #e8edf4; }
+        tr:hover { background: #f9fafb; }
+        .priority-p1 { color: #c23934; font-weight: bold; }
+        .priority-p2 { color: #fe9339; font-weight: bold; }
+        .priority-p3 { color: #706e6b; }
+        .effort-low { background: #d9f0d9; color: #0a6e0a; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .effort-medium { background: #ffecc2; color: #7a5d0a; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .effort-high { background: #fdd4d4; color: #8c1616; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .status-new { color: #0176d3; }
+        .status-triaged { color: #fe9339; }
+        .status-waiting { color: #706e6b; }
+        .work-id { font-family: 'Courier New', monospace; color: #0176d3; }
+        .component { font-size: 12px; color: #706e6b; background: #f4f6f9; padding: 2px 6px; border-radius: 3px; display: inline-block; }
+        .age { color: #706e6b; font-size: 12px; }
+        .source-icon { font-size: 16px; }
+        .search-box { width: 100%; padding: 10px; border: 1px solid #d8dde6; border-radius: 4px; font-size: 14px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 ASE Accessibility Bugs Report</h1>
+        <p style="color: #706e6b; margin-bottom: 20px;">Total: 44 bugs | Generated: 2026-03-30</p>
+
+        <div class="summary">
+            <h2>📊 Summary by Effort Level</h2>
+            <div class="stat-grid">
+                <div class="stat-card" style="border-left-color: #0a6e0a;">
+                    <div class="label">Low Effort</div>
+                    <div class="value">22</div>
+                    <div class="age">1-2 hours each</div>
+                </div>
+                <div class="stat-card" style="border-left-color: #fe9339;">
+                    <div class="label">Medium Effort</div>
+                    <div class="value">15</div>
+                    <div class="age">3-8 hours each</div>
+                </div>
+                <div class="stat-card" style="border-left-color: #c23934;">
+                    <div class="label">High Effort</div>
+                    <div class="value">7</div>
+                    <div class="age">1-3 days each</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">From Spreadsheet</div>
+                    <div class="value">20</div>
+                    <div class="age">Verified estimates</div>
+                </div>
+            </div>
+        </div>
+        
+        <input type="text" class="search-box" id="searchBox" placeholder="🔎 Search by Work ID, Subject, Component..." onkeyup="filterTable()">
+        
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterByEffort('all')">All</button>
+            <button class="filter-btn" onclick="filterByEffort('Low')">Low Effort (22)</button>
+            <button class="filter-btn" onclick="filterByEffort('Medium')">Medium Effort (15)</button>
+            <button class="filter-btn" onclick="filterByEffort('High')">High Effort (7)</button>
+            <span style="margin: 0 10px;">|</span>
+            <button class="filter-btn" onclick="filterByPriority('P1')">P1 (2)</button>
+            <button class="filter-btn" onclick="filterByPriority('P2')">P2 (9)</button>
+            <button class="filter-btn" onclick="filterByPriority('P3')">P3 (33)</button>
+        </div>
+        
+        <table id="bugTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Work ID ↕</th>
+                    <th onclick="sortTable(1)">Priority ↕</th>
+                    <th onclick="sortTable(2)">Effort ↕</th>
+                    <th onclick="sortTable(3)">Component ↕</th>
+                    <th onclick="sortTable(4)">Subject ↕</th>
+                    <th onclick="sortTable(5)">Status ↕</th>
+                    <th onclick="sortTable(6)">Age ↕</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-21112804</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Card</span></td>
+                    <td>[Government] Signature - 472464955 - VA Center for Innovation #3 - [Accessibility] [Links] Multiple "More" Links not consistently identified</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">41 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-16319952</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Change owner</span></td>
+                    <td>[Accessibility] 252 - Related to misuse of ARIA</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">240 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-21742538</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Change owner</span></td>
+                    <td>[Accessibility][Change Owner Dialog][NVDA] - NVDA announces 'Cancel' and 'Submit' Buttons together in browse Mode</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">3 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-16902231</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Dependent picklists</span></td>
+                    <td>[Accessibility] [Opportunity] Form fields that do not qualify as Lists are marked up as Lists</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">365 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P2">
+                    <td><span class="work-id">W-20889489</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] Mismatched programmatic implementation: "These required fields must be completed: …" error message text within the "New Action Plan" page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">3 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-11158811</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[A11y] baseRecordForm should not steal focus when hitting Escape</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">1,009 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-11544104</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] [Custom Objects] JAWS Cannot Announce the Title of New/ Edit Object Record Modal</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">240 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-13069755</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] On 'New Document Clause' page, filled fields are highlighted in yellow to indicate the fields are modified, but there is no alternative for people with color-blindness.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">767 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-16432196</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] When editing Dynamic Form fields using the JAWS arrow keys, the previous field is repeated.</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">429 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-16715088</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] Multiple announcements: “required” text / information for the “Name” input fields in the “New Attribute Category” page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">343 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-16715135</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] Multiple announcements: “Review the error on this page. These required field must be completed: Catalog, Name” error message in the "New Category" page.</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">299 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-17063528</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[BUG] (Accessibility) No placeholder text for Email field on Records within LEX and Experience Sites</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">365 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-17570834</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility][Maps] Missing advance warning: "Mailing Address" link in the "Detail" tab within the "Contacts Lauren Bailey" detail page.</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">205 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-19249465</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] List role is used incorrectly, To Do List - New Task</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">163 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-20642882</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] [Disney audit] - agent name hover pop up when record is deleted should be keyboard accessibile</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">35 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-20889499</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] Mismatched visual indication of element: "Rank" input element within the "New Person Disability" page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">29 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-21337968</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[Accessibility] "Undo" button on Record Edit appears behind focus, breaking logical tab order</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">25 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-21451003</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[BUG] (Accessibility) Incorrect role="list" on Form Fields Confuses Screen Reader Users</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">18 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-8547915</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Detail/Forms</span></td>
+                    <td>[BwC-1][LWC/Aura][a11y] Multiple modals are not correctly setting aria-labelledby value for modal title</td>
+                    <td><span class="status-waiting">Waiting</span></td>
+                    <td><span class="age">1,065 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-17570785</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Entity icon</span></td>
+                    <td>[Accessibility] Redundant assistive text: decorative “Lead” image in the “Lead” detail page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">240 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-17909382</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Error popover</span></td>
+                    <td>[Accessibility] Multiple announcements: "We hit a snag" text / information in the "New Loyalty Program" page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">270 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-19321116</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Error popover</span></td>
+                    <td>[Forms][Accessibility] Focus is not trapped within the info popover that is opened on Dynamic Forms footer</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">164 days</span></td>
+                </tr>
+
+                <tr data-effort="High" data-priority="P2">
+                    <td><span class="work-id">W-21199515</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-high">High</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Highlights</span></td>
+                    <td>[Accessibility] Zoom-in Text Issues: "Related" tab</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">13 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P2">
+                    <td><span class="work-id">W-21672465</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Highlights</span></td>
+                    <td>[Accessibility] Mismatched programmatic implementation: highlights panel field label texts</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">5 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P2">
+                    <td><span class="work-id">W-21672472</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Highlights</span></td>
+                    <td>[Accessibility] Mismatched programmatic implementation: highlights panel field label texts</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">5 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P2">
+                    <td><span class="work-id">W-21672480</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Highlights</span></td>
+                    <td>[Accessibility] Mismatched programmatic implementation: highlights panel field label texts</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">2 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-13961929</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Highlights</span></td>
+                    <td>A11y Remove title from Record Detail Avatars</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">630 days</span></td>
+                </tr>
+
+                <tr data-effort="High" data-priority="P3">
+                    <td><span class="work-id">W-17483595</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-high">High</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Highlights</span></td>
+                    <td>[BwC-2][Accessibility] Update highlights panel field resize logic to support text spacing technique bookmarklets</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">331 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-20015866</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Highlights</span></td>
+                    <td>[Accessibility] Heading level not structured logically: H1 heading level.</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">105 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-19162016</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Info popover</span></td>
+                    <td>[Government] Premier - 470683500 - New York State Department of Health - [Accessibility] [Dynamic Forms] Controlling Fields (i) Help Info Button Contains Programmatic Content</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">174 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-17963994</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">LWR</span></td>
+                    <td>[BUG] (Accessibility) Standard Record Detail Component in LWR Community contains additional span tag, failing screen reader</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">240 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P1">
+                    <td><span class="work-id">W-21672474</span></td>
+                    <td><span class="priority-p1">P1</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Other</span></td>
+                    <td>[Accessibility] Missing accessible name: accordion button in the "Details" tab</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">5 days</span></td>
+                </tr>
+
+                <tr data-effort="High" data-priority="P2">
+                    <td><span class="work-id">W-21672482</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-high">High</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Other</span></td>
+                    <td>[Accessibility] Reflow: "New Business Operations Process Regulation Clause Version" page</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">2 days</span></td>
+                </tr>
+
+                <tr data-effort="High" data-priority="P1">
+                    <td><span class="work-id">W-11119683</span></td>
+                    <td><span class="priority-p1">P1</span></td>
+                    <td><span class="effort-high">High</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Preview panel</span></td>
+                    <td>[Preview Panel]Accessibility: Focus is Lost After Canceling Preview Edits on Related Records</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">618 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-16319962</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Preview panel</span></td>
+                    <td>[Accessibility] 252 - Related to element touch target size</td>
+                    <td><span class="status-waiting">Waiting</span></td>
+                    <td><span class="age">240 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-17909398</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated">🤖</span></td>
+                    <td><span class="component">Preview panel</span></td>
+                    <td>[Accessibility] Multiple announcements: Various Preview button information in the "Loyalty Program Currency Detail" record page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">270 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-18748919</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Preview panel</span></td>
+                    <td>[Accessibility] Multiple announcements: content of various Preview buttons in the "Conversation" card within the "Messaging Session" record page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">12 days</span></td>
+                </tr>
+
+                <tr data-effort="High" data-priority="P2">
+                    <td><span class="work-id">W-21672466</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-high">High</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Record Home</span></td>
+                    <td>[Accessibility] Reflow: Compliance Control record page</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">5 days</span></td>
+                </tr>
+
+                <tr data-effort="High" data-priority="P2">
+                    <td><span class="work-id">W-21672473</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-high">High</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Record Home</span></td>
+                    <td>[Accessibility] Reflow: Business Operations Process page</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">5 days</span></td>
+                </tr>
+
+                <tr data-effort="High" data-priority="P2">
+                    <td><span class="work-id">W-21672481</span></td>
+                    <td><span class="priority-p2">P2</span></td>
+                    <td><span class="effort-high">High</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Record Home</span></td>
+                    <td>[Accessibility] Reflow: "header" section</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">2 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-16976129</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">Record Home</span></td>
+                    <td>[Accessibility] Multiple "h1" headings: "Gift Batch" record page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">315 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-20889483</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Record Home</span></td>
+                    <td>[Accessibility] Heading level not structured logically: H1 heading level in the "Application Form" page.</td>
+                    <td><span class="status-new">New</span></td>
+                    <td><span class="age">26 days</span></td>
+                </tr>
+
+                <tr data-effort="Medium" data-priority="P3">
+                    <td><span class="work-id">W-21357070</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-medium">Medium</span> <span class="source-icon" title="Estimated (new)">🤖</span></td>
+                    <td><span class="component">Record Home</span></td>
+                    <td>[Accessibility][recordField] - Insufficient and unclear ARIA Live Region Announcement for Undo Button on record field</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">23 days</span></td>
+                </tr>
+
+                <tr data-effort="Low" data-priority="P3">
+                    <td><span class="work-id">W-17485188</span></td>
+                    <td><span class="priority-p3">P3</span></td>
+                    <td><span class="effort-low">Low</span> <span class="source-icon" title="Spreadsheet">📋</span></td>
+                    <td><span class="component">User Avatar</span></td>
+                    <td>[Accessibility] 6. Service appointments header - Decorative images not hidden</td>
+                    <td><span class="status-triaged">Triaged</span></td>
+                    <td><span class="age">270 days</span></td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        let currentSort = { col: -1, asc: true };
+        
+        function sortTable(col) {
+            const table = document.getElementById('bugTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            const asc = currentSort.col === col ? !currentSort.asc : true;
+            currentSort = { col, asc };
+            
+            rows.sort((a, b) => {
+                const aVal = a.cells[col].textContent.trim();
+                const bVal = b.cells[col].textContent.trim();
+                
+                if (col === 6) {
+                    const aNum = parseInt(aVal);
+                    const bNum = parseInt(bVal);
+                    return asc ? aNum - bNum : bNum - aNum;
+                }
+                
+                return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+        }
+        
+        function filterByEffort(effort) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const rows = document.querySelectorAll('#bugTable tbody tr');
+            rows.forEach(row => {
+                if (effort === 'all' || row.dataset.effort === effort) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function filterByPriority(priority) {
+            const rows = document.querySelectorAll('#bugTable tbody tr');
+            rows.forEach(row => {
+                if (row.dataset.priority === priority) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function filterTable() {
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            const rows = document.querySelectorAll('#bugTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(search) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
